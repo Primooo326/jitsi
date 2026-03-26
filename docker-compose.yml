@@ -1,0 +1,71 @@
+services:
+  web:
+    image: jitsi/web:stable
+    restart: unless-stopped
+    ports:
+      - '${HTTP_PORT}:80'
+      - '${HTTPS_PORT}:443'
+    volumes:
+      - ~/.jitsi-meet-cfg/web:/config
+    env_file: .env
+    networks:
+      meet.jitsi:
+
+  prosody:
+    image: jitsi/prosody:stable
+    restart: unless-stopped
+    expose:
+      - '5222'
+      - '5347'
+      - '5280'
+    volumes:
+      - ~/.jitsi-meet-cfg/prosody:/config
+    env_file: .env
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+
+  jicofo:
+    image: jitsi/jicofo:stable
+    restart: unless-stopped
+    volumes:
+      - ~/.jitsi-meet-cfg/jicofo:/config
+    env_file: .env
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+  jvb:
+    image: jitsi/jvb:stable
+    restart: unless-stopped
+    ports:
+      - '10000:10000/udp'
+      - '3478:3478/udp'
+    volumes:
+      - ~/.jitsi-meet-cfg/jvb:/config
+    env_file: .env
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+  jibri:
+    image: jitsi/jibri:stable
+    restart: unless-stopped
+    shm_size: '2gb'
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    volumes:
+      - ~/.jitsi-meet-cfg/jibri:/config
+    env_file: .env
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+networks:
+  meet.jitsi:
