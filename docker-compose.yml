@@ -70,7 +70,8 @@ services:
     environment:
       - DISPLAY=:0
       - JIBRI_SKIP_ALSA_CHECK=1
-      - CHROMIUM_FLAGS=--no-sandbox --disable-dev-shm-usage --ignore-certificate-errors --allow-insecure-localhost --allow-running-insecure-content --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream --use-fake-device-for-media-stream
+      # Usamos la variable del .env correctamente
+      - JIBRI_CHROMIUM_FLAGS=${JIBRI_CHROMIUM_FLAGS}
       - JIBRI_ENTRY_URL_PARAMETERS=#config.filmStripOnly=true&config.hideConferenceTimer=true&interfaceConfig.TOOLBAR_BUTTONS=[]
     extra_hosts:
       - "${LETSENCRYPT_DOMAIN}:host-gateway"
