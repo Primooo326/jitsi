@@ -1,53 +1,96 @@
-# Jitsi Meet Deployment (Docker)
+¡Qué buena captura! Ver ese **"En vivo"** en YouTube después de tanto pelear con los archivos de configuración es la mejor sensación. Para que no tengas que repetir todo el proceso de memoria y puedas clonar esto en cualquier VPS en segundos, aquí tienes el `README.md` definitivo.
 
-Este proyecto contiene los archivos necesarios para desplegar una instancia de **Jitsi Meet** utilizando Docker, con soporte integrado para **Jibri** (grabación y retransmisión).
+He incluido los "hacks" que descubrimos (el modo Kiosko para el zoom y el fix del VirtualHost de Prosody) para que el repositorio sea nivel profesional.
+
+---
+
+# 🎥 Jitsi Meet + Jibri: One-Click Deployment
+
+Este proyecto permite desplegar una instancia completa de **Jitsi Meet** con capacidades de **Streaming (YouTube/Facebook/RTMP)** y **Grabación**, optimizada para servidores VPS. 
+
+A diferencia de la instalación estándar, este repositorio incluye:
+* **Modo Kiosko:** Jibri transmite solo la reunión, sin barras de direcciones ni menús de Chrome.
+* **Auto-Fix de Prosody:** Configuración automática del dominio de grabación (`recorder`).
+* **Aislamiento Docker:** Todo se ejecuta en contenedores, manteniendo tu sistema limpio.
+
+---
+
+## 🚀 Requisitos del Sistema
+
+| Recurso | Recomendado | Mínimo |
+| :--- | :--- | :--- |
+| **CPU** | 4 Cores | 2 Cores |
+| **RAM** | 8 GB | 4 GB (con SWAP) |
+| **SO** | Ubuntu 22.04 / 24.04 | Debian 11+ |
+| **Red** | Puertos 80, 443, 10000/udp abiertos | - |
+
+---
 
 ## 📁 Estructura del Proyecto
 
-- `docker-compose.yml`: Define los servicios de Jitsi (Web, Prosody, Jicofo, JVB, Jibri).
-- `.env`: Variables de entorno para la configuración de red, dominio, certificados de Let's Encrypt y claves de comunicación interna.
-- `install.sh`: Script de instalación para preparar el entorno (Docker, dependencias y carpetas de configuración).
-- `restart.sh`: Script para reiniciar los servicios y depurar/regenerar archivos de configuración de manera limpia.
+* `docker-compose.yml`: Orquestación de los 5 microservicios (Web, Prosody, Jicofo, JVB, Jibri).
+* `.env`: Configuración de dominios, SSL y credenciales.
+* `setup.sh`: Script inteligente que prepara carpetas, permisos y módulos de audio.
+* `config/`: Carpeta (generada) que contiene la persistencia de datos.
 
-## 📋 Requisitos Previos
+---
 
-- Sistema operativo Linux (preferiblemente Ubuntu/Debian).
-- Privilegios de superusuario (`sudo/root`) para instalar dependencias y crear configuraciones.
-- Los puertos `8181` (o el que se configure en `.env`), `8443` y `10000/udp` deberán estar accesibles.
+## 🛠️ Instalación Paso a Paso
 
-## 🚀 Instalación y Despliegue
-
-### 1. Configurar Entorno
-Revisa y ajusta el archivo `.env` según tus necesidades antes de comenzar.
-Asegúrate de cambiar los dominios (`PUBLIC_URL`, `LETSENCRYPT_DOMAIN`, etc.), correos, contraseñas e IPs correctas.
-
-### 2. Ejecutar Script de Instalación
-Este paso instalará el módulo de loopback de audio `snd-aloop` (requerido por Jibri), instalará Docker/Docker Compose y creará los directorios de configuración en `~/.jitsi-meet-cfg/`.
-
+### 1. Clonar y Preparar
 ```bash
-chmod +x install.sh
-./install.sh
+git clone <tu-repositorio>
+cd jitsi-streaming-server
+cp .env.example .env
 ```
 
-### 3. Levantar los Servicios
-Después de que se complete la preparación, puedes inicializar Jitsi levantando los contenedores:
+### 2. Configurar el `.env`
+Edita el archivo `.env` y asegúrate de cambiar:
+* `PUBLIC_URL`: Tu dominio (ej. `https://jitsi.midominio.com`).
+* `JIBRI_RECORDER_PASSWORD`: Una clave segura.
+* **TIP (Zoom en Transmisión):** Asegúrate de que `JIBRI_CHROMIUM_FLAGS` incluya `--kiosk` para que la transmisión se vea a pantalla completa.
 
+### 3. Ejecutar el Instalador
+El script `setup.sh` hará el trabajo sucio (instalar Docker, cargar el módulo de audio virtual `snd-aloop` y configurar Prosody):
 ```bash
-docker compose up -d
-```
-> *Nota: Según indica el script de instalación, si se requiere instanciar configuraciones extra para Jibri, se usaría un comando combinado, pero por defecto el archivo docker-compose suministrado incluye a Jibri.*
-
-## 🔄 Mantenimiento y Reinicio
-
-Si cambias la configuración en el `.env` o necesitas regenerar de forma limpia las carpetas de componentes (como Web, Prosody o Jicofo), utiliza el script de reinicio:
-
-```bash
-chmod +x restart.sh
-./restart.sh
+chmod +x setup.sh
+./setup.sh
 ```
 
-Esto bajará los contenedores temporalmente, limpiará configuraciones específicas en `~/.jitsi-meet-cfg` y los volverá a levantar en segundo plano.
+---
 
-## 📹 Notas sobre Jibri (Grabación/Streaming)
+## 📹 Cómo Iniciar una Transmisión
 
-Este entorno ya tiene configurado un contenedor `jibri` en `docker-compose.yml`. Las credenciales y variables de su comportamiento se definen en el archivo `.env` bajo la sección *"Configuración de Jibri (Streaming)"*. Para que funcione correctamente, debe permanecer cargado el módulo `snd-aloop` implementado durante el `install.sh`.
+1.  Accede a tu dominio y crea una sala.
+2.  Ve a **Más acciones (los tres puntos)** > **Iniciar transmisión en vivo**.
+3.  Pega tu **Clave de transmisión** de YouTube/Twitch.
+4.  Jibri entrará a la sala como un usuario invisible llamado `recorder` y empezará a enviar el video.
+
+---
+
+## 🔍 Solución de Problemas (Debug)
+
+### El botón de "Grabar/Transmitir" no aparece
+Esto suele ser un error de comunicación interna. Verifica que el usuario recorder exista:
+```bash
+docker exec jitsi-streaming-server-prosody-1 prosodyctl --config /config/prosody.cfg.lua register recorder recorder.meet.jitsi <tu_password>
+```
+
+### La transmisión se ve con bordes negros
+Jibri captura a **1280x720** por defecto. Si quieres cambiar la calidad, ajusta las variables de resolución en el contenedor de Jibri dentro del `docker-compose.yml`.
+
+### Ver logs en tiempo real
+* **General:** `docker compose logs -f`
+* **Solo Jibri (Captura de video):** `docker logs -f jitsi-streaming-server-jibri-1`
+
+---
+
+## 🛡️ Seguridad
+* El tráfico está cifrado vía **Let's Encrypt** (auto-renovable).
+* Se recomienda configurar `AUTH_TYPE=internal` en el `.env` si no quieres que cualquier persona pueda crear salas en tu servidor.
+
+---
+
+> **Nota:** Este despliegue utiliza el modo "Host Gateway" para que Jibri pueda resolver dominios locales, evitando problemas comunes de red en VPS como AWS o Google Cloud.
+
+---
