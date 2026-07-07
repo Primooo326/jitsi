@@ -80,5 +80,16 @@ services:
     networks:
       meet.jitsi:
 
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    restart: unless-stopped
+    ports:
+      - '1935:1935'
+      - '8888:8888'
+    volumes:
+      - ./config/mediamtx.yml:/mediamtx.yml
+    networks:
+      meet.jitsi:
+
 networks:
   meet.jitsi:

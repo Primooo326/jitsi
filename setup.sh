@@ -13,6 +13,23 @@ fi
 echo "📁 Creando carpetas de persistencia..."
 mkdir -p ./config/web ./config/prosody/conf.d ./config/jicofo ./config/jvb ./config/jibri
 
+# Crear config de MediaMTX si no existe
+if [ ! -f ./config/mediamtx.yml ]; then
+    cat > ./config/mediamtx.yml << 'EOF'
+rtmp:
+  servers:
+    - address: :1935
+
+hls:
+  serverAddress: :8888
+  muxSegments: 2
+
+paths:
+  live:
+    source: publisher
+EOF
+fi
+
 # 3. Verificar existencia de .env
 if [ ! -f .env ]; then
     echo "⚠️  Archivo .env no encontrado. Copiando desde .env.example..."

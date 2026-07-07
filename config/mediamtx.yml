@@ -1,0 +1,11 @@
+rtmp:
+  servers:
+    - address: :1935
+
+hls:
+  serverAddress: :8888
+  muxSegments: 2
+
+paths:
+  live:
+    source: publisher
