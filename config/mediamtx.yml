@@ -1,11 +1,8 @@
-rtmp:
-  servers:
-    - address: :1935
-
-hls:
-  serverAddress: :8888
-  muxSegments: 2
+rtmp: true
+rtmpAddress: :1935
+hls: true
+hlsAddress: :8888
 
 paths:
-  live:
+  "~^(.+)$":
     source: publisher
