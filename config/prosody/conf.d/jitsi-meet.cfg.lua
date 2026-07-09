@@ -47,8 +47,14 @@ smacks_max_old_sessions = 1;
 VirtualHost "meet.jitsi"
 
   
-    authentication = "internal_hashed"
-    disable_sasl_mechanisms={ "DIGEST-MD5", "OAUTHBEARER" }
+  authentication = "token"
+    app_id = "votavox"
+    
+    app_secret = "jitsi-dev-secret"
+    
+    allow_empty_token = false
+    
+    enable_domain_verification = false
   
 
     ssl = {
@@ -73,6 +79,7 @@ VirtualHost "meet.jitsi"
         
         
         
+        "jibri_session";
 
     }
 
@@ -103,6 +110,7 @@ VirtualHost "auth.meet.jitsi"
     }
     modules_enabled = {
         "limits_exception";
+        "jibri_session";
         "smacks";
     }
     authentication = "internal_hashed"
@@ -136,6 +144,7 @@ Component "muc.meet.jitsi" "muc"
     modules_enabled = {
         "muc_hide_all";
         "muc_meeting_id";
+        "token_verification";
         
         "muc_domain_mapper";
         
